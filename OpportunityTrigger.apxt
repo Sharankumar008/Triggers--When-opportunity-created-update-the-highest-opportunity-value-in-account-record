@@ -1,0 +1,28 @@
+//when opportunity created, update the highest opportunity value in account record
+
+
+trigger HighOpportunityTrigger on Opportunity (after insert) {
+    Set<Id> accountIds = new Set<Id>();
+    for (Opportunity opp : Trigger.new) {
+        accountIds.add(opp.AccountId);
+    }
+    
+    List<Account> accountList = new List<Account>();
+    List<AggregateResult> agResult=[
+        SELECT AccountId, MAX(Amount) highestValue
+        FROM Opportunity
+        WHERE AccountId IN :accountIds
+        GROUP BY AccountId
+    ];
+    for(AggregateResult ar:agResult){
+        Account accountRecord=new Account();
+        accountRecord.Id=(Id)ar.get('AccountId');
+        accountRecord.High_Opportunity__c=(Decimal)ar.get('highestValue');
+        accountList.add(accountRecord);
+    }    
+    
+    if(!accountList.isEmpty()){
+        update accountList;
+    }
+    
+}
